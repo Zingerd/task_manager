@@ -24,7 +24,6 @@ public class MessageProducer {
             String message = objectMapper.writeValueAsString(task);
             kafkaTemplate.send(topic, message);
         } catch (JsonProcessingException e) {
-            // Обробити помилку серіалізації
             e.printStackTrace();
         }
     }
