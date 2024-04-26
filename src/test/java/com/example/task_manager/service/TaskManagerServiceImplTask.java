@@ -12,10 +12,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class TaskManagerServiceImplTask {
@@ -29,8 +36,13 @@ public class TaskManagerServiceImplTask {
     @Mock
     ModelMapper modelMapper;
 
+    @Mock
+    DataSource dataSource;
+
     @Test
-    void createTask() {
+    void createTask() throws SQLException {
+        Mockito.when(dataSource.getConnection()).thenReturn(Mockito.mock(Connection.class));
+        Mockito.when(dataSource.getConnection().isValid(100)).thenReturn(true);
         Assertions.assertNotNull(taskManagerService.createTask(buildTaskDto()));
 
     }
@@ -43,7 +55,7 @@ public class TaskManagerServiceImplTask {
 
     @Test
     void removeTaskById() {
-        Mockito.when(taskManagerH2Repo.findById(1L)).thenReturn(Optional.of(new Task()));
+        when(taskManagerH2Repo.findById(1L)).thenReturn(Optional.of(new Task()));
         Assertions.assertNotNull(taskManagerService.removeTaskById(1L));
     }
 
@@ -52,14 +64,14 @@ public class TaskManagerServiceImplTask {
         ChangeStatus changeStatus = new ChangeStatus();
         changeStatus.setStatus(Status.COMPLEAT);
         changeStatus.setId(1L);
-        Mockito.when(taskManagerH2Repo.findById(1L)).thenReturn(Optional.of(new Task()));
+        when(taskManagerH2Repo.findById(1L)).thenReturn(Optional.of(new Task()));
         Assertions.assertNotNull(taskManagerService.updateStatus(changeStatus));
     }
 
     @Test
     void updateTask() {
 
-        Mockito.when(taskManagerH2Repo.findById(1L)).thenReturn(Optional.of(new Task()));
+        when(taskManagerH2Repo.findById(1L)).thenReturn(Optional.of(new Task()));
         taskManagerService.updateTask(buildTaskDto(), 1L);
     }
     private TaskDto buildTaskDto() {

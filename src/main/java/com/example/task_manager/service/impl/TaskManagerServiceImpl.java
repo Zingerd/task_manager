@@ -1,5 +1,6 @@
 package com.example.task_manager.service.impl;
 
+import com.example.task_manager.conf.KafkaProducerConfig.MessageProducer;
 import com.example.task_manager.dto.TaskDto;
 import com.example.task_manager.entity.ChangeStatus;
 import com.example.task_manager.entity.Task;
@@ -17,8 +18,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
-
 @Service
 @Log4j2
 public class TaskManagerServiceImpl implements TaskManagerService {
@@ -31,16 +30,17 @@ public class TaskManagerServiceImpl implements TaskManagerService {
 
     private final DataSource h2DataSource;
 
+    private final MessageProducer messageProducer;
+
 
     TaskManagerServiceImpl(TaskManagerH2Repo taskManagerH2Repo, ModelMapper modelMapper,
                            TaskManagerPostgresRepo taskManagerPostgresRepo,
-                           @Qualifier("H2DataSource") DataSource h2DataSource) {
+                           @Qualifier("H2DataSource") DataSource h2DataSource, MessageProducer messageProducer) {
         this.taskManagerH2Repo = taskManagerH2Repo;
         this.modelMapper = modelMapper;
         this.taskManagerPostgresRepo = taskManagerPostgresRepo;
         this.h2DataSource = h2DataSource;
-
-
+        this.messageProducer = messageProducer;
     }
 
     @Override
@@ -49,16 +49,18 @@ public class TaskManagerServiceImpl implements TaskManagerService {
         try {
             if (h2DataSource.getConnection().isValid(100)) {
                 h2DataSource.getConnection().close();
+                messageProducer.sendMessage("task_manager", taskDto);
                 taskManagerH2Repo.save(convertTaskDtoToTaskEntity(taskDto));
                 return String.format("Create new task with id : %s", taskDto.id);
             }
             throw new SQLException();
         } catch (SQLException e) {
             log.error("SQL Error saving to H2 database, switching to PostgreSQL", e);
-                taskManagerPostgresRepo.save(convertTaskDtoToTaskEntity(taskDto));
-                return String.format("Create new task with id : %s using PostgreSQL", taskDto.id);
+            taskManagerPostgresRepo.save(convertTaskDtoToTaskEntity(taskDto));
+            return String.format("Create new task with id : %s using PostgreSQL", taskDto.id);
         }
     }
+
     @Override
     public List<TaskDto> getListTask() {
         log.info("get List task ");
@@ -89,10 +91,10 @@ public class TaskManagerServiceImpl implements TaskManagerService {
             throw new SQLException();
         } catch (SQLException e) {
             log.error("SQL Error remove to H2 database, switching to PostgresSQL", e);
-                taskManagerPostgresRepo.findById(id)
-                        .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + id));
-                taskManagerPostgresRepo.deleteById(id);
-                return String.format("Task, with this id: %s, removed", id);
+            taskManagerPostgresRepo.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + id));
+            taskManagerPostgresRepo.deleteById(id);
+            return String.format("Task, with this id: %s, removed", id);
         }
     }
 
@@ -103,20 +105,22 @@ public class TaskManagerServiceImpl implements TaskManagerService {
             if (h2DataSource.getConnection().isValid(100)) {
                 h2DataSource.getConnection().close();
                 Task task = taskManagerH2Repo.findById(changeStatus.getId())
-                        .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + id));
+                        .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + changeStatus.getId()));
                 task.setStatus(changeStatus.getStatus());
+                messageProducer.sendMessage("task_manager", task);
                 taskManagerH2Repo.save(task);
 
-                return String.format("Task, with this id: %s, removed", id);
+                return String.format("Task, with this id: %s, update status", changeStatus.getId());
             }
             throw new SQLException();
         } catch (SQLException e) {
-            log.error("SQL Error remove to H2 database, switching to PostgresSQL", e);
-            Task task = taskManagerH2Repo.findById(changeStatus.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + id));;
+            log.error("SQL Error update status task to H2 database, switching to PostgresSQL", e);
+            Task task = taskManagerPostgresRepo.findById(changeStatus.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + changeStatus.getId()));
+            ;
             task.setStatus(changeStatus.getStatus());
-            taskManagerH2Repo.save(task);
-            return String.format("Update is done with id %s", id);
+            taskManagerPostgresRepo.save(task);
+            return String.format("Update is done with id %s", changeStatus.getId());
         }
     }
 
@@ -129,7 +133,10 @@ public class TaskManagerServiceImpl implements TaskManagerService {
                 Task optionalTask = taskManagerH2Repo.findById(id)
                         .orElseThrow(() -> new EntityNotFoundException("Task not found with id: " + id));
                 Task task = getTask(taskDto, optionalTask);
-                if (task == null) return false;
+                if (task == null) {
+                    return false;
+                }
+                messageProducer.sendMessage("task_manager", task);
                 taskManagerH2Repo.save(task);
                 return true;
             }

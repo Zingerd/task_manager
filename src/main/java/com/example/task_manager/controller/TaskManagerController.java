@@ -27,13 +27,13 @@ import java.util.List;
 @RequestMapping("api/task_management")
 public class TaskManagerController {
 
-    TaskManagerServiceImpl taskManagerService;
-    TaskManagerController(TaskManagerServiceImpl taskManagerService) {
+    private final TaskManagerServiceImpl taskManagerService;
+    public TaskManagerController(TaskManagerServiceImpl taskManagerService) {
         this.taskManagerService = taskManagerService;
     }
 
 
-    @PostMapping("/add")
+    @PostMapping()
     public ResponseEntity<String> createTask(@RequestBody TaskDto taskDto) {
         try {
             ValidatorHandler.validatorTaskDto(taskDto);
@@ -43,7 +43,7 @@ public class TaskManagerController {
         }
     }
 
-    @PutMapping ("/update-status/{id}")
+    @PutMapping ({"/{id}"})
     public ResponseEntity<String> updateStatus(@RequestBody ChangeStatus changeStatus) {
         try {
             ValidatorHandler.validatorStatus(changeStatus);
@@ -53,7 +53,7 @@ public class TaskManagerController {
         }
     }
 
-    @PatchMapping("/update-task/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<String> updateTask(@RequestBody TaskDto taskDto, @PathVariable Long id) {
         boolean success = taskManagerService.updateTask(taskDto, id);
         if (success) {
@@ -63,13 +63,13 @@ public class TaskManagerController {
         }
     }
 
-    @GetMapping("/get")
+    @GetMapping()
     public List<TaskDto> getListTask() {
         return taskManagerService.getListTask();
     }
 
-    @DeleteMapping("/remove/{id}")
-    public ResponseEntity<String>  getListTask(@PathVariable Long id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> getListTask(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(taskManagerService.removeTaskById(id));
         }
