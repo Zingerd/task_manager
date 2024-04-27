@@ -39,11 +39,11 @@ services:
 ```
 # Table of describe requests
 
-| Request                               |              Request Type              | Description                                                                                                                                                                                          |
-|---------------------------------------|:--------------------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| /api/task_management/{id}             |                  PUT                   | Update task                                                                                                                                                                                          |
-| /api/task_management/{id}             |                 DELETE                 | Remove task                                                                                                                                                                                          |
-| /api/task_management/{id}             |                 PATCH                  | Update body task                                                                                                                                                                                     |
-| /api/task_management                  |                  GET                   | Get all tasks                                                                                                                                                                                        |
-| /api/task_management                  |                  POST                  | Create task                                                                                                                                                                                          |
+| Request                               |              Request Type              | Description        |
+|---------------------------------------|:--------------------------------------:|--------------------|
+| /api/task_management/{id}             |                  PUT                   | Update status task |
+| /api/task_management/{id}             |                 DELETE                 | Remove task        |
+| /api/task_management/{id}             |                 PATCH                  | Update body task   |
+| /api/task_management                  |                  GET                   | Get all tasks      |
+| /api/task_management                  |                  POST                  | Create task        |
 
